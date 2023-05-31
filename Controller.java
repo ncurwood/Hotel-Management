@@ -1,7 +1,9 @@
+package com.company;
+
 import java.io.IOException;
 
 public class Controller {
-        HotelFrame frame;
+    HotelFrame frame;
     public Controller() throws IOException {
         frame = new HotelFrame();
         initLogin();
@@ -9,5 +11,6 @@ public class Controller {
 
     private void initLogin() throws IOException {
         frame.login();
+        
     }
 }

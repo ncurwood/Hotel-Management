@@ -1,3 +1,5 @@
+package com.company;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
@@ -21,7 +23,13 @@ public class HotelFrame extends JFrame {
 
     protected void login() throws IOException {
         clearPanels();
-        MAIN_PANEL.add(new LoginPanel(), BorderLayout.CENTER);
+        MAIN_PANEL.add(new LoginPanel(this), BorderLayout.CENTER);
+        setVisible(true);
+    }
+
+    protected void menu(int employeeid, String url, String usernamedb, String passworddb) throws IOException {
+        clearPanels();
+        MAIN_PANEL.add(new HotelSystemGUI(employeeid,url, usernamedb, passworddb));
         setVisible(true);
     }
 
