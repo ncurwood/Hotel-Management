@@ -1,5 +1,9 @@
-package com.company;
-
+/*TCSS 445
+Hotel Management Database Project
+05/31/2023
+Nicholas Curwood
+Anthony Owens
+ */
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -12,6 +16,7 @@ public class HotelSystem {
         this.connection = connection;
     }
 
+    //Start the shift of the current employee
     public void clockIn(int employeeId, String date, String startTime) throws SQLException {
         // Update the employee's shift start time in the database
         String query = "INSERT INTO Shifts (`Employee-ID`, Date, `Start Time`) VALUES (?, ?, ?)";
@@ -23,6 +28,7 @@ public class HotelSystem {
         }
     }
 
+    //End the shift of the current employee
     public void clockOut(int employeeId, String date, String endTime) throws SQLException {
         // Update the employee's shift end time in the database
         String query = "UPDATE Shifts SET `End Time` = ? WHERE `Employee-ID` = ? AND Date = ?";
@@ -34,6 +40,7 @@ public class HotelSystem {
         }
     }
 
+    //Make a new booking
     public int makeBooking(String guestCardNumber, String buildingId, int roomNumber, String date, int computerId, int employeeId, String packageName) throws SQLException {
         String query = "INSERT INTO Booking (`Room Number`, `Building-ID`, Date, `Guest Card Number`, `Computer-ID`, `Employee-ID`, `Package Name`) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
@@ -48,6 +55,7 @@ public class HotelSystem {
 
             int affectedRows = statement.executeUpdate();
 
+            //If this query worked, return 1 (success)
             if (affectedRows > 0) {
                 return 1;
             }
@@ -56,6 +64,7 @@ public class HotelSystem {
         return -1; // Return -1 if the booking was not successful
     }
 
+    //remove and existing booking
     public boolean cancelBooking(String buildingId, int roomNumber, String date) throws SQLException {
         String query = "DELETE FROM Booking WHERE `Building-ID` = ? AND `Room Number` = ? AND Date = ?";
 
@@ -70,6 +79,7 @@ public class HotelSystem {
         }
     }
 
+    //Update room service after cleaning, booking, or checking out
     public boolean updateRoomStatus(String buildingID, int roomNumber, String newStatus) throws SQLException {
         String query = "UPDATE Room SET `Room Status` = ? WHERE `Building-ID` = ? AND `Room Number` = ?";
 
@@ -83,6 +93,7 @@ public class HotelSystem {
         }
     }
 
+    //Update a phone number
     public boolean updatePersonalPhone(int employeeId, String newPhone) throws SQLException {
         String query = "UPDATE Employee SET `Employee Phone` = ? WHERE `Employee-ID` = ?";
 
@@ -96,6 +107,7 @@ public class HotelSystem {
         }
     }
 
+    //Swap employees for an existing shift
     public boolean changeShifts(int newEmployeeID, int oldEmployeeID, String date, String startTime) throws SQLException {
         String query = "UPDATE Shifts SET `Employee-ID` = ? WHERE `Employee-ID` = ? AND `Date` = ? AND `Start Time` = ?";
 
@@ -111,6 +123,7 @@ public class HotelSystem {
         }
     }
 
+    //Make sure points are enough
     public Boolean cashInLoyaltyPoints(String card, int points) {
         // Update the guest's loyalty points in the database
         String query = "UPDATE Loyalty_Program SET `Loyalty Points` = ? WHERE `Guest Card Number` = ?";
@@ -128,6 +141,7 @@ public class HotelSystem {
 
     }
 
+    //Make sure the ID Password pair exist to an actual employee
     public boolean authenticateEmployee(int employeeId, String password) throws SQLException {
         String query = "SELECT COUNT(*) FROM Employee WHERE `Employee-ID` = ? AND `Employee Password` = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -143,6 +157,7 @@ public class HotelSystem {
         return false;
     }
 
+    //Make sure that the guest is registered in the system for loyalty points
     public boolean authenticateGuest(String card) throws SQLException {
         String query = "SELECT COUNT(*) FROM Guest WHERE `Guest Card Number` = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -157,18 +172,20 @@ public class HotelSystem {
         return false;
     }
 
-    protected void saveGuest(String card, String fname, String lname){
+    //Register a new card in the guest registry with their full name
+    protected void saveGuest(String card, String fName, String lName){
         String query = "INSERT INTO Guest(`Guest Card Number`, `Guest First Name`, `Guest Last Name`) VALUES(?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, card);
-            statement.setString(2, fname);
-            statement.setString(3, lname);
+            statement.setString(2, fName);
+            statement.setString(3, lName);
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
+    //Typically follows the saveGuest, new guests need to start will loyalty
     protected void initLoyalty(String card){
         String query = "INSERT INTO Loyalty_Program(`Guest Card Number`,`Loyalty Points`) VALUES(?,0)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -179,9 +196,10 @@ public class HotelSystem {
         }
     }
 
-    protected void increaseLoyalty(String card, int amount) throws SQLException {
+    //Increase the loyalty of a guest by 100
+    protected void increaseLoyalty(String card) throws SQLException {
         int currentLoyalty = getLoyalty(card);
-        int newLoyalty = currentLoyalty + amount;
+        int newLoyalty = currentLoyalty + 100;
 
         String query = "UPDATE Loyalty_Program SET `Loyalty Points` = ? WHERE `Guest Card Number` = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -193,9 +211,10 @@ public class HotelSystem {
         }
     }
 
+    //Obtain the loyalty points of a costumer
     protected int getLoyalty(String card) throws SQLException {
         String query = "SELECT `Loyalty Points` FROM Loyalty_Program WHERE `Guest Card Number` = ?";
-        ResultSet resultSet = null;
+        ResultSet resultSet;
         int result = 0;
 
         try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -211,8 +230,9 @@ public class HotelSystem {
         return result;
     }
 
+    //Obtain all of the existing buildings
     protected String[] getBuildings() throws SQLException {
-        String[] buildings = null;
+        String[] buildings;
         String query = "SELECT DISTINCT `Building-ID`FROM Building";
 
         Statement statement = connection.createStatement();
@@ -231,8 +251,10 @@ public class HotelSystem {
         return buildings;
     }
 
+    //Obtain all the rooms within a building
+    //Filter the results based on vacant rooms or just rooms in general
     protected String[] getRooms(String buildingID, boolean filterRoomStatus) throws SQLException {
-        String[] rooms = null;
+        String[] rooms;
         String query1 = "SELECT DISTINCT `Room Number`FROM Room WHERE `Building-ID` = ? AND `Room Status` = 'Vacant'";
         String query2 = "SELECT DISTINCT `Room Number`FROM Room WHERE `Building-ID` = ?";
 
@@ -252,8 +274,9 @@ public class HotelSystem {
         return rooms;
     }
 
+    //Get all the computers
     protected String[] getComputers() throws SQLException {
-        String[] computers = null;
+        String[] computers;
         String query = "SELECT DISTINCT `Computer-ID`FROM Computer";
 
         Statement statement = connection.createStatement();
@@ -270,8 +293,9 @@ public class HotelSystem {
         return computers;
     }
 
+    //Get the existing packages
     protected String[] getPackages() throws SQLException {
-        String[] pkgs = null;
+        String[] packages;
         String query = "SELECT DISTINCT `Package Name` FROM Guest_Package";
 
         Statement statement = connection.createStatement();
@@ -284,12 +308,13 @@ public class HotelSystem {
             packageList.add(pkg);
         }
 
-        pkgs = packageList.toArray(new String[0]);
-        return pkgs;
+        packages = packageList.toArray(new String[0]);
+        return packages;
     }
 
+    //Get the dates that a specific room is booked in the future
     protected String[] getBookingDates(String buildingID, int roomNumber) throws SQLException {
-        String[] dates = null;
+        String[] dates;
         String query = "SELECT DISTINCT `Date` FROM Booking WHERE `Building-ID` = ? AND `Room Number` = ?";
 
         ArrayList<String> dateList = new ArrayList<>();
@@ -308,8 +333,9 @@ public class HotelSystem {
         return dates;
     }
 
+    //Get employees that worked on a certain date
     protected String[] getEmployees(String date) throws SQLException {
-        String[] employees = null;
+        String[] employees;
         String query = "SELECT DISTINCT `Employee-ID` FROM Shifts WHERE `Date` = ?";
 
         ArrayList<String> employeeList = new ArrayList<>();
@@ -327,8 +353,9 @@ public class HotelSystem {
         return employees;
     }
 
+    //Get the shifts an employee worked on a certain date
     protected String[] getShifts(int employeeID, String date) throws SQLException {
-        String[] shifts = null;
+        String[] shifts;
         String query = "SELECT DISTINCT `Start Time` FROM Shifts WHERE `Date` = ? AND `Employee-ID` = ?";
 
         ArrayList<String> shiftList = new ArrayList<>();
@@ -349,7 +376,7 @@ public class HotelSystem {
         return shifts;
     }
 
-
+    //Close the connection
     public void close() throws SQLException {
         if (connection != null) {
             connection.close();
